@@ -4,6 +4,9 @@
  * @Email    	:   channaveer888@gmail.com
  * @Version	:   1.0
  * @Description	:   This Script is used to backup your complete database or partial tables backup
+ * @Modified by :	@ohkmalganis ohkmalganis@gmail.com 17-04-2017
+ * @Aditional	:	We can also add a funcion where the user could insert the name of the file (.zip) 
+ 					in the database
  */
 
 /* Error Reporting */
@@ -36,7 +39,7 @@ class DatabaseBackup{
 		$this->hostname		=	'localhost';
 		$this->username		=	'root';
 		$this->password		=	'';
-		$this->database		=	'login';
+		$this->database		=	'database';
 		/* Call DB Initialization Function */
 		$this->initalizeDB();
 		
@@ -117,13 +120,46 @@ class DatabaseBackup{
 		}
 		/* If the 2nd parameter was not specified then default one will be passed */
 		$backupDirectory = ($backupDirectory == '') ? $this->backupDirectory : $backupDirectory;
-		if($this->logDatabase($sql,$backupDirectory)){
-			echo '<h4>Exported Database <span style="color:#7D0097">`'.$this->database.'`</span>Successfully to folder - <span style="color:#1CAD7A"> `'.$backupDirectory.'`</span><h4>';exit;
+
+		$nameFile = $this->logDatabase($sql,$backupDirectory);
+
+        if($nameFile)
+        {
+        	$condition = true;
+        }
+        else
+        {
+        	$condition = false;
+        }
+
+		if($condition){
+			echo '<h4>Exported Database <span style="color:#7D0097">`'.$this->database.'`</span>Successfully to folder - <span style="color:#1CAD7A"> `'.$backupDirectory.'`</span><h4>';
 		}else{
-			echo '<h2>Error in Exporting Database '.$this->database.'<h2>';exit;
+			echo '<h2>Error in Exporting Database '.$this->database.'<h2>';
 		}
+
+		/* Make a zip file */
+		$this->converttoZip($nameFile, $backupDirectory);
+
+		# This is optional
+		# return $nameFile;
+		exit;
 		
 	}
+
+	/* Function used to convert to zip File */
+	private function converttoZip($filename, $backupDirectory){
+        $zip = new ZipArchive();
+        $filename = $backupDirectory.'/'.$filename.'.zip';
+        
+        if($zip->open($filename, ZipArchive::CREATE) === true){
+            $zip->addFile($backupDirectory."/".$filename, $filename);
+            $zip->close();
+            return true;
+        }else{
+            return false;
+        }
+    }
 	
 	/* Function used to Log the Database */
 	private function logDatabase($sql,$backupDirectory = ''){
@@ -137,14 +173,14 @@ class DatabaseBackup{
 				$fileHandler	=	fopen($backupDirectory.'/'.$filename.'.sql','w+');
 				fwrite($fileHandler,$sql);
 				fclose($fileHandler);
-				return true;
+				return $filename.".sql";
 			}
 		}else{
 			$filename	=	'log_'.$this->database.date('Y-m-d_H-i-s');
 			$fileHandler	=	fopen($backupDirectory.'/'.$filename.'.sql','w+');
 			fwrite($fileHandler,$sql);
 			fclose($fileHandler);
-			return true;
+			return $filename.".sql";
 		}	
 		return false;
 	}
